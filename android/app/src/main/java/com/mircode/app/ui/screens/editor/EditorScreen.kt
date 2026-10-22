@@ -35,6 +35,7 @@ fun EditorScreen(
     var originalContent by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(true) }
     var isSaving by remember { mutableStateOf(false) }
+    var isWordWrap by remember { mutableStateOf(false) }
     var snackbarMessage by remember { mutableStateOf<String?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -100,6 +101,13 @@ fun EditorScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { isWordWrap = !isWordWrap }) {
+                        Icon(
+                            imageVector = if (isWordWrap) Icons.Default.WrapText else Icons.Default.FormatAlignLeft,
+                            contentDescription = "自动换行切换",
+                            tint = if (isWordWrap) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                     IconButton(
                         onClick = {
                             scope.launch {
@@ -131,10 +139,12 @@ fun EditorScreen(
             )
         },
         bottomBar = {
-            // Virtual Symbol Bar
+            // Virtual Symbol Bar lifted with soft keyboard
             Surface(
                 tonalElevation = 3.dp,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .imePadding()
             ) {
                 Row(
                     modifier = Modifier
@@ -196,12 +206,18 @@ fun EditorScreen(
                     }
 
                     // Code Editor Text Area
-                    Box(
-                        modifier = Modifier
+                    val editorModifier = if (isWordWrap) {
+                        Modifier
+                            .weight(1f)
+                            .padding(8.dp)
+                    } else {
+                        Modifier
                             .weight(1f)
                             .horizontalScroll(rememberScrollState())
                             .padding(8.dp)
-                    ) {
+                    }
+
+                    Box(modifier = editorModifier) {
                         BasicTextField(
                             value = content,
                             onValueChange = { content = it },

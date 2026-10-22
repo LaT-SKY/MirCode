@@ -33,6 +33,7 @@ fun GitStatusScreen(
     onRefresh: () -> Unit,
     onOpenFileDiff: (file: String, staged: Boolean) -> Unit,
     onOpenFileEditor: (file: String) -> Unit,
+    onLocateFile: (file: String) -> Unit,
     onOpenConflictResolver: () -> Unit,
     onSwitchWorkspace: () -> Unit,
     modifier: Modifier = Modifier
@@ -145,6 +146,7 @@ fun GitStatusScreen(
                         staged = true,
                         onClick = { onOpenFileDiff(file.path, true) },
                         onEdit = { onOpenFileEditor(file.path) },
+                        onLocateInTree = { onLocateFile(file.path) },
                         onToggleStage = {
                             scope.launch {
                                 apiClient.unstageFiles(listOf(file.path))
@@ -184,6 +186,7 @@ fun GitStatusScreen(
                         staged = false,
                         onClick = { onOpenFileDiff(file.path, false) },
                         onEdit = { onOpenFileEditor(file.path) },
+                        onLocateInTree = { onLocateFile(file.path) },
                         onToggleStage = {
                             scope.launch {
                                 apiClient.stageFiles(listOf(file.path))
@@ -223,6 +226,7 @@ fun GitStatusScreen(
                         staged = false,
                         onClick = { onOpenFileDiff(file.path, false) },
                         onEdit = { onOpenFileEditor(file.path) },
+                        onLocateInTree = { onLocateFile(file.path) },
                         onToggleStage = {
                             scope.launch {
                                 apiClient.stageFiles(listOf(file.path))
@@ -401,6 +405,7 @@ fun FileStatusItem(
     staged: Boolean,
     onClick: () -> Unit,
     onEdit: () -> Unit,
+    onLocateInTree: () -> Unit,
     onToggleStage: () -> Unit,
     onToggleReview: () -> Unit
 ) {
@@ -483,6 +488,13 @@ fun FileStatusItem(
         },
         trailingContent = {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onLocateInTree) {
+                    Icon(
+                        imageVector = Icons.Default.FolderOpen,
+                        contentDescription = "在文件树中定位",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                }
                 IconButton(onClick = onEdit) {
                     Icon(Icons.Default.Edit, contentDescription = "Edit Code", tint = MaterialTheme.colorScheme.primary)
                 }

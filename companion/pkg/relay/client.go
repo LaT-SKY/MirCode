@@ -39,6 +39,7 @@ type Client struct {
 	mu           sync.RWMutex
 	relayURL     string
 	token        string
+	desiredCode  string
 	pairCode     string
 	localHandler http.Handler
 	stopCh       chan struct{}
@@ -46,14 +47,15 @@ type Client struct {
 	onConnected  func(code string)
 }
 
-// NewClient creates a new relay client.
-func NewClient(relayURL, token string, localHandler http.Handler, onConnected func(code string)) *Client {
+// NewClient creates a new relay client with an optional desired pair code.
+func NewClient(relayURL, token, desiredCode string, localHandler http.Handler, onConnected func(code string)) *Client {
 	if relayURL == "" {
 		relayURL = "http://127.0.0.1:18990" // Default to relay port or public fallback
 	}
 	return &Client{
 		relayURL:     strings.TrimSuffix(relayURL, "/"),
 		token:        token,
+		desiredCode:  desiredCode,
 		localHandler: localHandler,
 		stopCh:       make(chan struct{}),
 		onConnected:  onConnected,
@@ -116,7 +118,7 @@ func (c *Client) runLoop() {
 }
 
 func (c *Client) register() (string, error) {
-	reqURL := fmt.Sprintf("%s/api/v1/relay/register?token=%s", c.relayURL, url.QueryEscape(c.token))
+	reqURL := fmt.Sprintf("%s/api/v1/relay/register?token=%s&code=%s", c.relayURL, url.QueryEscape(c.token), url.QueryEscape(c.desiredCode))
 	resp, err := http.Post(reqURL, "application/json", nil)
 	if err != nil {
 		return "", err

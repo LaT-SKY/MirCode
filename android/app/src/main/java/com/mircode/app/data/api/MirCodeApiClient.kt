@@ -73,6 +73,37 @@ class MirCodeApiClient(
         }
     }
 
+    suspend fun getWorkspaces(): Result<List<WorkspaceEntry>> = runCatching {
+        val request = newRequestBuilder("/api/v1/workspaces").get().build()
+        val response = executeRequest(request)
+        response.use {
+            if (!it.isSuccessful) throw IOException("Failed to get workspaces: ${it.code}")
+            val type = object : TypeToken<List<WorkspaceEntry>>() {}.type
+            gson.fromJson<List<WorkspaceEntry>>(it.body?.string(), type) ?: emptyList()
+        }
+    }
+
+    suspend fun addWorkspace(path: String): Result<WorkspaceEntry> = runCatching {
+        val json = gson.toJson(mapOf("path" to path))
+        val body = json.toRequestBody(jsonMediaType)
+        val request = newRequestBuilder("/api/v1/workspaces").post(body).build()
+        val response = executeRequest(request)
+        response.use {
+            if (!it.isSuccessful) throw IOException("Failed to add workspace: ${it.code}")
+            gson.fromJson(it.body?.string(), WorkspaceEntry::class.java)
+        }
+    }
+
+    suspend fun deleteWorkspace(path: String): Result<Boolean> = runCatching {
+        val encoded = java.net.URLEncoder.encode(path, "UTF-8")
+        val request = newRequestBuilder("/api/v1/workspaces?path=$encoded").delete().build()
+        val response = executeRequest(request)
+        response.use {
+            if (!it.isSuccessful) throw IOException("Failed to delete workspace: ${it.code}")
+            true
+        }
+    }
+
     suspend fun activateWorkspace(path: String): Result<Boolean> = runCatching {
         val json = gson.toJson(mapOf("path" to path))
         val body = json.toRequestBody(jsonMediaType)

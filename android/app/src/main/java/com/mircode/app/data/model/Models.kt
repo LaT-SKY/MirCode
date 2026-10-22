@@ -127,3 +127,20 @@ data class WSMessage(
     @SerializedName("type") val type: String,
     @SerializedName("timestamp") val timestamp: Long
 )
+
+data class WorkspaceEntry(
+    @SerializedName("path") val path: String,
+    @SerializedName("name") val name: String,
+    @SerializedName("lastOpened") val lastOpened: Long = 0,
+    @SerializedName("isGit") val isGit: Boolean = false
+)
+
+data class AppSettings(
+    val autoConnect: Boolean = true,
+    val defaultWordWrap: Boolean = false,
+    val editorFontSize: Int = 13,
+    val tabSize: Int = 4,
+    val diffContextLines: Int = 3,
+    val diffFoldingThreshold: Int = 5,
+    val themeMode: String = "SYSTEM" // "SYSTEM", "LIGHT", "DARK"
+)

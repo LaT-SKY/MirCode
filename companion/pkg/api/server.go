@@ -13,6 +13,7 @@ import (
 	"github.com/LaT-SKY/MirCode/companion/pkg/git"
 	"github.com/LaT-SKY/MirCode/companion/pkg/review"
 	"github.com/LaT-SKY/MirCode/companion/pkg/watcher"
+	"github.com/LaT-SKY/MirCode/companion/pkg/workspace"
 )
 
 // Server coordinates HTTP API, WebSockets, Git operations, and file watchers.
@@ -21,6 +22,7 @@ type Server struct {
 	workspace    string
 	authMgr      *auth.Manager
 	reviewMgr    *review.Manager
+	workspaceMgr *workspace.Manager
 	watcher      *watcher.Watcher
 	hub          *Hub
 	recentSpaces []string
@@ -33,12 +35,19 @@ func NewServer(initialWorkspace string, authMgr *auth.Manager) (*Server, error) 
 		return nil, fmt.Errorf("failed to init review manager: %w", err)
 	}
 
+	wsMgr, err := workspace.NewManager("")
+	if err != nil {
+		return nil, fmt.Errorf("failed to init workspace manager: %w", err)
+	}
+	_, _ = wsMgr.AddOrUpdate(initialWorkspace)
+
 	hub := NewHub()
 
 	s := &Server{
 		workspace:    initialWorkspace,
 		authMgr:      authMgr,
 		reviewMgr:    revMgr,
+		workspaceMgr: wsMgr,
 		hub:          hub,
 		recentSpaces: []string{initialWorkspace},
 	}
@@ -75,6 +84,7 @@ func (s *Server) Handler() http.Handler {
 	// System & Workspace
 	mux.HandleFunc("/api/v1/system/info", s.handleSystemInfo)
 	mux.HandleFunc("/api/v1/fs/browse", s.handleFsBrowse)
+	mux.HandleFunc("/api/v1/workspaces", s.handleWorkspaces)
 	mux.HandleFunc("/api/v1/workspaces/activate", s.handleWorkspaceActivate)
 	mux.HandleFunc("/api/v1/workspaces/recent", s.handleWorkspacesRecent)
 
@@ -121,6 +131,10 @@ func (s *Server) setActiveWorkspace(ws string) error {
 	}
 
 	s.workspace = ws
+
+	if s.workspaceMgr != nil {
+		_, _ = s.workspaceMgr.AddOrUpdate(ws)
+	}
 
 	// Track in recent
 	found := false
@@ -170,6 +184,52 @@ func (s *Server) handleFsBrowse(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, res)
+}
+
+func (s *Server) handleWorkspaces(w http.ResponseWriter, r *http.Request) {
+	if s.workspaceMgr == nil {
+		writeError(w, http.StatusInternalServerError, "workspace manager not initialized")
+		return
+	}
+
+	switch r.Method {
+	case http.MethodGet:
+		writeJSON(w, http.StatusOK, s.workspaceMgr.List())
+	case http.MethodPost:
+		var body struct {
+			Path string `json:"path"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Path == "" {
+			writeError(w, http.StatusBadRequest, "Invalid request: path required")
+			return
+		}
+		entry, err := s.workspaceMgr.AddOrUpdate(body.Path)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, entry)
+	case http.MethodDelete:
+		target := r.URL.Query().Get("path")
+		if target == "" {
+			var body struct {
+				Path string `json:"path"`
+			}
+			_ = json.NewDecoder(r.Body).Decode(&body)
+			target = body.Path
+		}
+		if target == "" {
+			writeError(w, http.StatusBadRequest, "Invalid request: path required")
+			return
+		}
+		if err := s.workspaceMgr.Remove(target); err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]bool{"success": true})
+	default:
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+	}
 }
 
 func (s *Server) handleWorkspaceActivate(w http.ResponseWriter, r *http.Request) {

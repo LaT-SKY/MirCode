@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -74,6 +76,13 @@ func RunGit(workspace string, args ...string) (string, error) {
 
 	err := cmd.Run()
 	if err != nil {
+		// In git diff, exit code 1 means differences were found (not an error)
+		if len(args) > 0 && args[0] == "diff" {
+			if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
+				return stdout.String(), nil
+			}
+		}
+
 		errMsg := strings.TrimSpace(stderr.String())
 		if errMsg == "" {
 			errMsg = strings.TrimSpace(stdout.String())
@@ -276,6 +285,38 @@ func attachNumStat(workspace string, res *StatusResult) {
 	if out, err := RunGit(workspace, "diff", "--cached", "--numstat"); err == nil {
 		parseAndMergeNumstat(out, res.StagedFiles)
 	}
+	// 3. Untracked files line count
+	for i := range res.UntrackedFiles {
+		fullPath := filepath.Join(workspace, res.UntrackedFiles[i].Path)
+		if lines, err := countFileLines(fullPath); err == nil {
+			res.UntrackedFiles[i].Additions = lines
+			res.UntrackedFiles[i].Deletions = 0
+		}
+	}
+}
+
+func countFileLines(path string) (int, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return 0, err
+	}
+	if len(data) == 0 {
+		return 0, nil
+	}
+	// Check if binary (null byte in first 512 bytes)
+	checkLen := len(data)
+	if checkLen > 512 {
+		checkLen = 512
+	}
+	if bytes.IndexByte(data[:checkLen], 0) != -1 {
+		return 0, nil
+	}
+
+	count := bytes.Count(data, []byte{'\n'})
+	if !bytes.HasSuffix(data, []byte{'\n'}) {
+		count++
+	}
+	return count, nil
 }
 
 func parseAndMergeNumstat(numstatOut string, files []FileStatus) {
@@ -310,19 +351,46 @@ func GetDiff(workspace, relPath string, staged bool) (string, error) {
 	}
 
 	diff, err := RunGit(workspace, args...)
-	if err != nil {
+	if err != nil && relPath == "" {
 		return "", err
 	}
 
-	// If untracked file, git diff returns empty. If so, show full content as addition
-	if diff == "" && relPath != "" && !staged {
-		untrackedContent, err := RunGit(workspace, "diff", "--no-index", "/dev/null", relPath)
-		if err == nil || untrackedContent != "" {
+	// If untracked file or new file with empty diff from git diff, generate unified diff against /dev/null
+	if (diff == "" || err != nil) && relPath != "" && !staged {
+		untrackedContent, uerr := RunGit(workspace, "diff", "--no-index", "/dev/null", relPath)
+		if uerr == nil && untrackedContent != "" {
 			return untrackedContent, nil
+		}
+		// Fallback: read file directly and format new file diff
+		fullPath := filepath.Join(workspace, relPath)
+		if data, rerr := os.ReadFile(fullPath); rerr == nil {
+			return formatNewFileDiff(relPath, string(data)), nil
 		}
 	}
 
 	return diff, nil
+}
+
+func formatNewFileDiff(relPath, content string) string {
+	var buf strings.Builder
+	buf.WriteString(fmt.Sprintf("diff --git a/%s b/%s\n", relPath, relPath))
+	buf.WriteString("new file mode 100644\n")
+	buf.WriteString("--- /dev/null\n")
+	buf.WriteString(fmt.Sprintf("+++ b/%s\n", relPath))
+
+	lines := strings.Split(content, "\n")
+	if len(lines) == 1 && lines[0] == "" {
+		return buf.String()
+	}
+	lineCount := len(lines)
+	if strings.HasSuffix(content, "\n") && lineCount > 0 {
+		lineCount--
+	}
+	buf.WriteString(fmt.Sprintf("@@ -0,0 +1,%d @@\n", lineCount))
+	for i := 0; i < lineCount; i++ {
+		buf.WriteString("+" + lines[i] + "\n")
+	}
+	return buf.String()
 }
 
 // StageFiles stages files via git add.

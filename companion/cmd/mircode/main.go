@@ -24,7 +24,7 @@ import (
 )
 
 var (
-	Version   = "1.0.1"
+	Version   = "1.1.0"
 	BuildTime = "2026-10-22"
 )
 
@@ -46,20 +46,24 @@ func main() {
 	}
 
 	var (
-		hostFlag      string
-		portFlag      int
-		tokenFlag     string
-		workspaceFlag string
-		relayFlag     string
-		noRelayFlag   bool
-		noQRFlag      bool
-		tuiFlag       bool
-		versionFlag   bool
+		hostFlag       string
+		portFlag       int
+		tokenFlag      string
+		codeFlag       string
+		resetCredsFlag bool
+		workspaceFlag  string
+		relayFlag      string
+		noRelayFlag    bool
+		noQRFlag       bool
+		tuiFlag        bool
+		versionFlag    bool
 	)
 
 	flag.StringVar(&hostFlag, "host", savedCfg.Host, "Host address to bind")
 	flag.IntVar(&portFlag, "port", savedCfg.Port, "Port to listen on")
 	flag.StringVar(&tokenFlag, "token", savedCfg.Token, "Security auth token")
+	flag.StringVar(&codeFlag, "code", savedCfg.PairCode, "6-digit pair code")
+	flag.BoolVar(&resetCredsFlag, "reset-creds", false, "Reset token and 6-digit pair code")
 	flag.StringVar(&workspaceFlag, "workspace", "", "Initial workspace path (default: current directory)")
 	flag.StringVar(&relayFlag, "relay", savedCfg.RelayURL, "Relay server URL for zero-config remote connections")
 	flag.BoolVar(&noRelayFlag, "no-relay", false, "Disable zero-config relay client")
@@ -67,6 +71,15 @@ func main() {
 	flag.BoolVar(&tuiFlag, "tui", false, "Open interactive settings configuration TUI")
 	flag.BoolVar(&versionFlag, "version", false, "Print version and exit")
 	flag.Parse()
+
+	if resetCredsFlag {
+		newCfg, err := config.ResetCredentials()
+		if err != nil {
+			log.Fatalf("Failed to reset credentials: %v", err)
+		}
+		fmt.Printf("✅ 已重置认证配置！新 Token: %s, 新配对码: %s\n", newCfg.Token, newCfg.PairCode)
+		return
+	}
 
 	if versionFlag {
 		fmt.Printf("MirCode Companion v%s (%s)\n", Version, BuildTime)
@@ -134,7 +147,11 @@ func main() {
 	pairCodeCh := make(chan string, 1)
 
 	if !noRelayFlag {
-		relayClient = relay.NewClient(relayFlag, token, handler, func(code string) {
+		relayClient = relay.NewClient(relayFlag, token, codeFlag, handler, func(code string) {
+			if code != "" && code != savedCfg.PairCode {
+				savedCfg.PairCode = code
+				_ = config.Save(savedCfg)
+			}
 			select {
 			case pairCodeCh <- code:
 			default:
@@ -150,7 +167,11 @@ func main() {
 	case code := <-pairCodeCh:
 		activePairCode = code
 	case <-time.After(1500 * time.Millisecond):
-		activePairCode = "连接中..."
+		if codeFlag != "" {
+			activePairCode = codeFlag
+		} else {
+			activePairCode = "连接中..."
+		}
 	}
 
 	hostname, _ := os.Hostname()

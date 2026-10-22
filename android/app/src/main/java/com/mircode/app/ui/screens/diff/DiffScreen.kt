@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mircode.app.data.api.MirCodeApiClient
 import com.mircode.app.data.model.DiffResult
+import com.mircode.app.data.repository.WorkspaceRepository
 import com.mircode.app.ui.components.DiffHunkView
 import com.mircode.app.ui.theme.ReviewedGreen
 import com.mircode.app.ui.theme.RevokedOrange
@@ -31,6 +32,7 @@ fun DiffScreen(
     modifiedSinceReview: Boolean,
     onBack: () -> Unit,
     onOpenEditor: (String) -> Unit,
+    workspaceRepository: WorkspaceRepository? = null,
     modifier: Modifier = Modifier
 ) {
     val scope = rememberCoroutineScope()
@@ -101,6 +103,7 @@ fun DiffScreen(
                             .onSuccess {
                                 isReviewed = it.reviewed
                                 hasModifiedWarning = it.modifiedSinceReview
+                                workspaceRepository?.optimisticToggleReview(filePath, it.reviewed)
                             }
                     }
                 },

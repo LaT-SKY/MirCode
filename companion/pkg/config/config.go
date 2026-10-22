@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"net"
 	"os"
 	"os/exec"
@@ -19,10 +20,20 @@ type Config struct {
 	Host             string `json:"host"`
 	Port             int    `json:"port"`
 	Token            string `json:"token"`
+	PairCode         string `json:"pairCode"`
 	DefaultWorkspace string `json:"defaultWorkspace"`
 	RelayURL         string `json:"relayUrl"`
 	AutoStart        bool   `json:"autoStart"`
 	TailcatEnabled   bool   `json:"tailcatEnabled"`
+}
+
+// GeneratePairCode generates a random 6-digit pair code.
+func GeneratePairCode() string {
+	n, err := rand.Int(rand.Reader, big.NewInt(900000))
+	if err != nil {
+		return "839102"
+	}
+	return fmt.Sprintf("%06d", n.Int64()+100000)
 }
 
 // DefaultConfig returns default configuration values.
@@ -32,6 +43,7 @@ func DefaultConfig() *Config {
 		Host:             "0.0.0.0",
 		Port:             18980,
 		Token:            generateToken(16),
+		PairCode:         GeneratePairCode(),
 		DefaultWorkspace: home,
 		RelayURL:         "https://relay.mircode.dev",
 		AutoStart:        false,
@@ -39,8 +51,8 @@ func DefaultConfig() *Config {
 	}
 }
 
-// ConfigFilePath returns the path to config.json.
-func ConfigFilePath() string {
+// ConfigDir returns the path to the configuration directory.
+func ConfigDir() string {
 	var dir string
 	if runtime.GOOS == "windows" {
 		dir = filepath.Join(os.Getenv("APPDATA"), "mircode")
@@ -48,7 +60,13 @@ func ConfigFilePath() string {
 		home, _ := os.UserHomeDir()
 		dir = filepath.Join(home, ".config", "mircode")
 	}
-	return filepath.Join(dir, "config.json")
+	_ = os.MkdirAll(dir, 0755)
+	return dir
+}
+
+// ConfigFilePath returns the path to config.json.
+func ConfigFilePath() string {
+	return filepath.Join(ConfigDir(), "config.json")
 }
 
 // Load reads the config file or returns defaults if not present.
@@ -69,8 +87,35 @@ func Load() (*Config, error) {
 		return nil, err
 	}
 
+	needsSave := false
+	if cfg.Token == "" {
+		cfg.Token = generateToken(16)
+		needsSave = true
+	}
+	if cfg.PairCode == "" {
+		cfg.PairCode = GeneratePairCode()
+		needsSave = true
+	}
+	if needsSave {
+		_ = Save(cfg)
+	}
+
 	// Sync AutoStart state with OS
 	cfg.AutoStart = IsAutoStartEnabled()
+	return cfg, nil
+}
+
+// ResetCredentials manually resets the token and pair code.
+func ResetCredentials() (*Config, error) {
+	cfg, err := Load()
+	if err != nil {
+		cfg = DefaultConfig()
+	}
+	cfg.Token = generateToken(16)
+	cfg.PairCode = GeneratePairCode()
+	if err := Save(cfg); err != nil {
+		return nil, err
+	}
 	return cfg, nil
 }
 

@@ -74,28 +74,39 @@ func NewRelayServer() *RelayServer {
 	}
 }
 
-func (s *RelayServer) generateUniqueCode() string {
+func (s *RelayServer) Register(desiredCode, token string) string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	// If a desiredCode was requested (6 digits)
+	if len(desiredCode) == 6 {
+		if existing, exists := s.sessions[desiredCode]; exists {
+			existing.mu.Lock()
+			isDead := existing.HostConn == nil
+			existing.mu.Unlock()
+
+			if existing.Token == token || isDead {
+				sess := newSession(desiredCode, token)
+				s.sessions[desiredCode] = sess
+				return desiredCode
+			}
+		} else {
+			sess := newSession(desiredCode, token)
+			s.sessions[desiredCode] = sess
+			return desiredCode
+		}
+	}
+
+	// Fallback to generating unique code
 	for {
 		n, _ := rand.Int(rand.Reader, big.NewInt(900000))
 		code := fmt.Sprintf("%06d", n.Int64()+100000)
 		if _, exists := s.sessions[code]; !exists {
+			sess := newSession(code, token)
+			s.sessions[code] = sess
 			return code
 		}
 	}
-}
-
-func (s *RelayServer) Register(token string) string {
-	code := s.generateUniqueCode()
-	sess := newSession(code, token)
-
-	s.mu.Lock()
-	s.sessions[code] = sess
-	s.mu.Unlock()
-
-	return code
 }
 
 func (s *RelayServer) GetSession(code string) (*Session, bool) {
@@ -132,8 +143,9 @@ func main() {
 		}
 
 		token := r.URL.Query().Get("token")
-		code := relay.Register(token)
-		log.Printf("[Relay] New room registered with code: %s", code)
+		desiredCode := strings.ReplaceAll(r.URL.Query().Get("code"), "-", "")
+		code := relay.Register(desiredCode, token)
+		log.Printf("[Relay] Room registered with code: %s (desired: %s)", code, desiredCode)
 
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
