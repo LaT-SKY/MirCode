@@ -1,0 +1,51 @@
+# Git ignore for MirCode monorepo
+
+# Binaries and outputs
+bin/
+*.exe
+*.dll
+*.so
+*.dylib
+/mircode
+/mircode-*
+/companion/mircode
+release/
+
+# Go build
+companion/bin/
+companion/mircode
+
+# Arch Linux packaging
+archlinux/pkg/
+archlinux/src/
+archlinux/*.pkg.tar.*
+archlinux/*.log
+
+# Android & Gradle
+.gradle/
+build/
+app/build/
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+android/*.iml
+android/app/*.iml
+android/captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+
+# OS & IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
+
+# MirCode runtime metadata
+.mircode/
+release/

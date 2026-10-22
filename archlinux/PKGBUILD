@@ -1,0 +1,23 @@
+# Maintainer: LaT-SKY <miprota@163.com>
+pkgname=mircode
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Companion daemon for MirCode mobile Git code review workspace"
+arch=('x86_64' 'aarch64')
+url="https://github.com/LaT-SKY/MirCode"
+license=('MIT')
+depends=('git')
+makedepends=('go')
+source=("mircode.service")
+sha256sums=('SKIP')
+
+build() {
+  cd "${startdir}/../companion"
+  export CGO_ENABLED=0
+  go build -trimpath -ldflags="-s -w -X main.Version=${pkgver}" -o "${srcdir}/mircode" ./cmd/mircode
+}
+
+package() {
+  install -Dm755 "${srcdir}/mircode" "${pkgdir}/usr/bin/mircode"
+  install -Dm644 "${srcdir}/mircode.service" "${pkgdir}/usr/lib/systemd/user/mircode.service"
+}
