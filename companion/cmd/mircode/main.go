@@ -17,8 +17,10 @@ import (
 	"github.com/skip2/go-qrcode"
 	"github.com/LaT-SKY/MirCode/companion/pkg/api"
 	"github.com/LaT-SKY/MirCode/companion/pkg/auth"
+	"github.com/LaT-SKY/MirCode/companion/pkg/config"
 	"github.com/LaT-SKY/MirCode/companion/pkg/relay"
 	"github.com/LaT-SKY/MirCode/companion/pkg/tailcat"
+	"github.com/LaT-SKY/MirCode/companion/pkg/tui"
 )
 
 var (
@@ -27,6 +29,22 @@ var (
 )
 
 func main() {
+	// Check for subcommands like `mircode config` or `mircode tui`
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "config", "tui", "settings":
+			if err := tui.RunConfigTUI(); err != nil {
+				log.Fatalf("TUI Error: %v", err)
+			}
+			return
+		}
+	}
+
+	savedCfg, err := config.Load()
+	if err != nil {
+		savedCfg = config.DefaultConfig()
+	}
+
 	var (
 		hostFlag      string
 		portFlag      int
@@ -35,16 +53,18 @@ func main() {
 		relayFlag     string
 		noRelayFlag   bool
 		noQRFlag      bool
+		tuiFlag       bool
 		versionFlag   bool
 	)
 
-	flag.StringVar(&hostFlag, "host", "0.0.0.0", "Host address to bind")
-	flag.IntVar(&portFlag, "port", 18980, "Port to listen on")
-	flag.StringVar(&tokenFlag, "token", "", "Security auth token (auto-generated if empty)")
+	flag.StringVar(&hostFlag, "host", savedCfg.Host, "Host address to bind")
+	flag.IntVar(&portFlag, "port", savedCfg.Port, "Port to listen on")
+	flag.StringVar(&tokenFlag, "token", savedCfg.Token, "Security auth token")
 	flag.StringVar(&workspaceFlag, "workspace", "", "Initial workspace path (default: current directory)")
-	flag.StringVar(&relayFlag, "relay", "https://relay.mircode.dev", "Relay server URL for zero-config remote connections")
+	flag.StringVar(&relayFlag, "relay", savedCfg.RelayURL, "Relay server URL for zero-config remote connections")
 	flag.BoolVar(&noRelayFlag, "no-relay", false, "Disable zero-config relay client")
 	flag.BoolVar(&noQRFlag, "no-qr", false, "Disable printing QR code in terminal")
+	flag.BoolVar(&tuiFlag, "tui", false, "Open interactive settings configuration TUI")
 	flag.BoolVar(&versionFlag, "version", false, "Print version and exit")
 	flag.Parse()
 
@@ -53,10 +73,19 @@ func main() {
 		os.Exit(0)
 	}
 
+	if tuiFlag {
+		if err := tui.RunConfigTUI(); err != nil {
+			log.Fatalf("TUI Error: %v", err)
+		}
+		return
+	}
+
 	// Positional argument for workspace path: `mircode .` or `mircode /path/to/dir`
 	if workspaceFlag == "" {
 		if flag.NArg() > 0 {
 			workspaceFlag = flag.Arg(0)
+		} else if savedCfg.DefaultWorkspace != "" {
+			workspaceFlag = savedCfg.DefaultWorkspace
 		} else {
 			workspaceFlag = "."
 		}
@@ -88,12 +117,15 @@ func main() {
 	}
 
 	// Tailcat integration check
-	tailcatMgr := tailcat.NewManager()
+	var tailcatMgr *tailcat.Manager
 	var tailcatAddr string
-	if tailcatMgr.IsAvailable() {
-		addr, err := tailcatMgr.Start(portFlag)
-		if err == nil {
-			tailcatAddr = addr
+	if savedCfg.TailcatEnabled {
+		tailcatMgr = tailcat.NewManager()
+		if tailcatMgr.IsAvailable() {
+			addr, err := tailcatMgr.Start(portFlag)
+			if err == nil {
+				tailcatAddr = addr
+			}
 		}
 	}
 
@@ -136,9 +168,9 @@ func main() {
 		fmt.Printf("   🔢 6 位专属配对码 : 【 %s 】(手机 App 输入即连)\n", formatCode(activePairCode))
 	}
 	if tailcatAddr != "" {
-		fmt.Printf("   🐱 Tailcat P2P 隧道: %s\n", tailcatAddr)
+		fmt.Printf("   🐱 TailCat P2P 隧道: %s\n", tailcatAddr)
 	} else {
-		fmt.Println("   🐱 Tailcat P2P 隧道: 备用中继已就绪 (安装 tailcat CLI 可加速 P2P 直连)")
+		fmt.Println("   🐱 TailCat P2P 隧道: 自动中继已待命 (安装 tailcat CLI 可加速 P2P 直连)")
 	}
 	fmt.Println("------------------------------------------------------------------")
 	fmt.Println("🌐 局域网直连地址 (同一 Wi-Fi):")
@@ -147,6 +179,7 @@ func main() {
 	}
 	fmt.Printf("   - 本机调试地址     : http://127.0.0.1:%d\n", portFlag)
 	fmt.Println("------------------------------------------------------------------")
+	fmt.Println("⚙️  提示: 运行 `mircode config` 或 `mircode tui` 打开配置管理中心 (开机自启/设置)")
 
 	primaryIP := "127.0.0.1"
 	if len(lanIPs) > 0 {
