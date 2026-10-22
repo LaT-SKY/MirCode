@@ -20,19 +20,28 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Check if launched with QR code deep link: mircode://connect?host=...&port=...&token=...&name=...
+        // Check if launched with QR code deep link: mircode://connect?...
         val profileFromIntent = intent?.data?.let { uri ->
             if (uri.scheme == "mircode" && uri.host == "connect") {
                 val host = uri.getQueryParameter("host") ?: "127.0.0.1"
                 val port = uri.getQueryParameter("port")?.toIntOrNull() ?: 18980
                 val token = uri.getQueryParameter("token") ?: ""
                 val name = uri.getQueryParameter("name") ?: "MirCode Companion"
+                val code = uri.getQueryParameter("code")
+                val relay = uri.getQueryParameter("relay") ?: "https://relay.mircode.dev"
+                val tailcat = uri.getQueryParameter("tailcat")
+
+                val mode = if (!code.isNullOrBlank() && code != "连接中...") "relay" else "direct"
+
                 ConnectionProfile(
                     name = name,
                     host = host,
                     port = port,
                     token = token,
-                    isTailscale = host.startsWith("100.")
+                    connectMode = mode,
+                    pairCode = code,
+                    relayUrl = relay,
+                    tailcatAddress = tailcat
                 )
             } else null
         }

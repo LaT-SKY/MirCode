@@ -35,6 +35,7 @@ jobs:
           mkdir -p ../dist
           # Linux AMD64
           CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w -X main.Version=1.0.0" -o ../dist/mircode-linux-amd64 ./cmd/mircode
+          tar -czvf ../dist/mircode-v1.0.0-linux-amd64.tar.gz -C ../dist mircode-linux-amd64
           # Linux ARM64
           CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags="-s -w -X main.Version=1.0.0" -o ../dist/mircode-linux-arm64 ./cmd/mircode
           # Windows AMD64
@@ -46,7 +47,36 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: companion-binaries
-          path: dist/*
+          path: |
+            dist/mircode-v1.0.0-linux-amd64.tar.gz
+            dist/mircode-windows-amd64.exe
+            dist/mircode-darwin-arm64
+            dist/mircode-linux-arm64
+
+  build-arch:
+    name: Build Arch Linux Package
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+    steps:
+      - name: Install Build Tools
+        run: |
+          pacman -Syu --noconfirm base-devel git go
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Build Package
+        run: |
+          useradd -m builder
+          chown -R builder:builder .
+          su builder -c "cd archlinux && makepkg -f --nodeps"
+
+      - name: Upload Arch Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: archlinux-package
+          path: archlinux/*.pkg.tar.zst
 
   build-android:
     name: Build Android APK
@@ -62,8 +92,9 @@ jobs:
           java-version: '21'
           cache: 'gradle'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Accept Android Licenses
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
       - name: Build Android App
         working-directory: android
@@ -72,9 +103,8 @@ jobs:
           ./gradlew assembleRelease --stacktrace
 
       - name: Rename & Upload APK
-        working-directory: android/app/build/outputs/apk/release
         run: |
-          cp app-release.apk ../../../../../MirCode-v1.0.0.apk
+          cp android/app/build/outputs/apk/release/app-release.apk MirCode-v1.0.0.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
@@ -84,7 +114,7 @@ jobs:
 
   release:
     name: Publish GitHub Release
-    needs: [build-companion, build-android]
+    needs: [build-companion, build-arch, build-android]
     if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
@@ -93,12 +123,17 @@ jobs:
 
       - name: Download All Artifacts
         uses: actions/download-artifact@v4
+        with:
+          path: all-artifacts
 
-      - name: Create Release
+      - name: Organize Release Files
+        run: |
+          mkdir -p release-files
+          find all-artifacts -type f \( -name "*.apk" -o -name "*.pkg.tar.zst" -o -name "*.tar.gz" -o -name "*.exe" \) -exec cp {} release-files/ \;
+          ls -lh release-files/
+
+      - name: Create or Update Release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            companion-binaries/*
-            mircode-apk/*
-            archlinux/*.pkg.tar.zst
+          files: release-files/*
           generate_release_notes: true

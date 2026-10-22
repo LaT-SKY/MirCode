@@ -6,7 +6,7 @@
 
 <p align="center">
   <b>遵循 Material Design 3 (MD3) 规范的移动端代码审查、全功能 Git 协作与远程工作区管理套件</b><br>
-  随时随地连接您的电脑（Arch Linux / macOS / Windows），尽享无缝的移动端代码审查体验。
+  随时随地连接您的电脑（Arch Linux / macOS / Windows），免配置异地打通工作区，尽享沉浸式移动端代码审查体验。
 </p>
 
 <p align="center">
@@ -15,6 +15,7 @@
   <img src="https://img.shields.io/badge/Arch%20Linux-makepkg%20ready-1793D1?logo=arch-linux&logoColor=white" alt="Arch Linux">
   <img src="https://img.shields.io/badge/Material%20Design%203-Jetpack%20Compose-4285F4?logo=google&logoColor=white" alt="MD3">
   <img src="https://img.shields.io/badge/Companion-Go%201.23%2B-00ADD8?logo=go&logoColor=white" alt="Go">
+  <img src="https://img.shields.io/badge/TailCat-P2P%20Ready-blueviolet" alt="TailCat">
   <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License">
 </p>
 
@@ -22,19 +23,24 @@
 
 ## 🌟 核心特性 (Key Features)
 
-1. **🎨 纯正 Material Design 3 (Material You)**
-   - 采用 Jetpack Compose 打造，原生支持 Material You 动态色彩取色（基于系统壁纸与主题）。
+1. **🚀 异地免配置连接 (TailCat P2P 隧道 + 6 位配对码)**
+   - **完全零配置**：电脑端启动 `mircode .` 自动生成 **6 位动态配对码**（如 `839-102`）与扫码二维码。
+   - **无需同一 Wi-Fi**：手机端在外面使用 4G/5G 移动蜂窝网络，只需输入 6 位配对码或扫码，无需公网 IP、无需端口映射、无需注册任何账号，一秒穿透直通！
+   - **TailCat P2P 加速**：底层优先尝试 UDP P2P 打洞直连，穿透失败自动平滑回退至公共/私有加密中继。
+
+2. **🎨 纯正 Material Design 3 (Material You)**
+   - 采用 Jetpack Compose 打造，原生支持 Material You 动态色彩取色（基于系统壁纸与主题自适应色调）。
    - 完备的自适应深色/浅色模式、流畅手势动效与标准非对称圆角质感。
 
-2. **📁 远程文件系统浏览与工作区保存**
+3. **📁 远程文件系统浏览与工作区保存**
    - 手机连接电脑后，可直接在手机上浏览电脑硬盘目录，并一键设为当前工作区。
    - 电脑端亦支持运行 `mircode .` 或 `mircode /path/to/project`，启动即自动挂载指定项目。
 
-3. **🔍 差异查看 (Git Diff) 与闭环审查 (Code Review)**
+4. **🔍 差异查看 (Git Diff) 与闭环审查 (Code Review)**
    - **高亮差异查看器**：语法高亮与行号对照，清晰呈现增删代码块。
    - **闭环审查失效机制**：文件一旦标记为“已审查”，系统会严格追踪其 Git Blob SHA / SHA256 哈希。一旦该文件在电脑或手机上发生后续修改，已审查状态**毫秒级自动重置为未审查**，并在手机端高亮提示“审查后被改动”。
 
-4. **⚡ 全能专业 Git 工具箱**
+5. **⚡ 全能专业 Git 工具箱**
    - **工作区状态 (Status)**：清晰呈现暂存区、未暂存、未跟踪与冲突状态。
    - **提交管理 (Commit)**：支持编写 Commit Message、一键 Amend 上次提交。
    - **分支流转 (Branches)**：分支列表、检出 (Checkout)、新建分支与删除分支。
@@ -42,27 +48,23 @@
    - **储藏管理 (Stash)**：支持 Stash 保存、Stash Pop 恢复。
    - **可视化冲突解决 (Conflict Resolution)**：一键采纳本地 (Ours)、采纳传入 (Theirs) 或进入内置代码编辑器手动合并。
 
-5. **✍️ 内置代码编辑器 (Native Code Editor)**
+6. **✍️ 内置代码编辑器 (Native Code Editor)**
    - 原生高性能文本编辑器，带行号指示与代码折叠。
    - 专属虚拟符号工具栏（`Tab`, `{`, `}`, `(`, `)`, `;`, `=`, `->` 等），移动端微调代码快如闪电。
    - 支持直接从 Diff 页面一键跳转至编辑器，修改保存后实时通过 WebSocket 双向流同步回电脑磁盘。
 
-6. **🌐 跨网络自由连接 (LAN & Tailscale)**
-   - 支持同一局域网 Wi-Fi 直连（控制台自动生成终端彩色配对二维码，扫码即连）。
-   - 完美适配 **Tailscale / WireGuard** 虚拟内网，外出通勤时也能随时穿透回办公室开发机进行代码审查。
-
 ---
 
-## 📐 系统架构 (Architecture)
+## 📐 系统拓扑与双模穿透架构
 
 ```
-┌──────────────────────────────────────┐       WebSocket / HTTP        ┌──────────────────────────────────────┐
+┌──────────────────────────────────────┐       WebSocket / TailCat     ┌──────────────────────────────────────┐
 │       开发机 (PC / Arch Linux)        │  ◄────────────────────────►  │          移动端 (Android App)         │
 │                                      │                               │                                      │
-│  ┌────────────────────────────────┐  │                               │  ┌────────────────────────────────┐  │
-│  │   mircode Companion 守护服务    │  │  • 局域网 Wi-Fi / 终端二维码   │  │   Material Design 3 Compose    │  │
-│  │   (Go 单一静态二进制可执行文件) │  │  • Tailscale 跨公网安全加密通道│  │   (动态色彩 / 响应式布局)       │  │
-│  └───────────────┬────────────────┘  │                               │  └────────────────┬───────────────┘  │
+│  ┌────────────────────────────────┐  │  • 方式 1：6 位数字配对码直连  │  ┌────────────────────────────────┐  │
+│  │   mircode Companion 守护服务    │  │  • 方式 2：TailCat P2P 用户态 │  │   Material Design 3 Compose    │  │
+│  │   (Go 单一静态二进制可执行文件) │  │  • 方式 3：终端二维码扫码即连 │  │   (动态色彩 / 响应式布局)       │  │
+│  └───────────────┬────────────────┘  │  • 方式 4：局域网同一 Wi-Fi 直连│  └────────────────┬───────────────┘  │
 │                  │                   │                               │                   │                  │
 │       ┌──────────┴──────────┐        │                               │       ┌───────────┴──────────┐       │
 │       ▼                     ▼        │                               │       ▼                      ▼       │
@@ -94,20 +96,13 @@ sudo pacman -U mircode-1.0.0-1-x86_64.pkg.tar.zst
 systemctl --user enable --now mircode
 ```
 
-#### 方案 B：直接运行独立二进制或 Go 编译
+#### 方案 B：直接运行独立二进制
 ```bash
-# 克隆仓库
-git clone https://github.com/LaT-SKY/MirCode.git
-cd MirCode/companion
-
-# 编译生成单文件
-go build -o mircode ./cmd/mircode
-
-# 启动服务并指定当前项目为工作区
+# 下载并解压 mircode 二进制后，在项目目录执行：
 ./mircode .
 ```
 
-启动后，终端将输出配对二维码与连接信息：
+启动后控制台将打印：
 ```text
 ==================================================================
    MirCode Companion Service  v1.0.0
@@ -116,10 +111,12 @@ go build -o mircode ./cmd/mircode
 📂 当前工作区: /home/neo/Code/Projects/MirCode
 🔑 安全配对令牌 (Token): 4b9e28f1a07c3d5e
 ------------------------------------------------------------------
-🌐 可用连接地址:
-   - Tailscale 跨网直连: http://100.64.12.34:18980
-   - 局域网 Wi-Fi 直连 : http://192.168.1.108:18980
-   - 本机测试连接     : http://127.0.0.1:18980
+🚀 异地免配置连接 (无需同一 Wi-Fi，随时随地连接):
+   🔢 6 位专属配对码 : 【 839 - 102 】(手机 App 输入即连)
+   🐱 TailCat P2P 隧道: 备用中继已就绪 (安装 tailcat CLI 可加速 P2P 直连)
+------------------------------------------------------------------
+🌐 局域网直连地址 (同一 Wi-Fi):
+   - Wi-Fi 内网地址   : http://192.168.1.108:18980
 ------------------------------------------------------------------
 📱 安卓端扫码配对二维码 (在 MirCode App 扫码即连):
 [  TERMINAL QR CODE RENDERED HERE  ]
@@ -128,64 +125,25 @@ go build -o mircode ./cmd/mircode
 
 ---
 
-### 2. 移动端安装与配对 (Android)
+### 2. 移动端安装与连接 (Android)
 
-1. 从 [GitHub Releases](https://github.com/LaT-SKY/MirCode/releases) 下载最新的 `MirCode-v1.0.0.apk` 并安装至手机。
-2. 打开 MirCode 应用：
-   - **扫码配对**：点击扫描终端中打印的配对二维码，一键自动填入 IP、端口与 Token。
-   - **手动输入**：填入电脑的局域网 IP（如 `192.168.1.108`）或 Tailscale IP（如 `100.64.12.34`），端口 `18980`，以及安全令牌。
-3. 点击 **立即连接工作区**，即可进入项目主控台！
-
----
-
-## 📖 核心功能操作指南 (User Manual)
-
-### 1. 切换与选择计算机文件夹
-- 点击右上角的 **切换工作区** 图标，打开远程文件系统浏览器。
-- 目录列表中自动识别并标注包含 `.git` 的仓库项目。
-- 导航至任意项目目录后，点击底部 **“设为工作区”**，伴侣服务将立即切换监听与 Git 上下文。
-
-### 2. 代码审查与自动失效流转
-- 在 **“审查 & 变更”** 标签页中，顶部直观呈现当前的 **审查进度条**（如 `4 / 7 文件已审查`）。
-- 点击任意文件进入 **Diff 差异页面**，阅读改动后点击悬浮按钮 **“标记为已审查”**。
-- **自动失效验证**：当您或团队成员在电脑端通过 VS Code / Vim 保存了该文件的新修改，MirCode 伴侣程序将立即检测到文件内容 Hash 变动，**自动将审查状态置为未审查**，并在手机端弹出提示并标注 **“审查后被改动”** 警告胶囊。
-
-### 3. Git 暂存、提交与分支操作
-- **暂存/取消暂存**：点击文件条目右侧的 `+` 或 `-` 图标，或者点击分组头部的 “全部暂存” / “取消全暂存”。
-- **提交代码**：点击右下角 **“提交”** FAB 唤出 MD3 底部抽屉，输入提交信息，可勾选 `Amend (合并到上次提交)` 后一键完成提交。
-- **分支管理**：在 **“分支 & 工具”** 标签页中，可随时一键新建分支、检出切换本地/远程分支。
-- **推送与拉取**：顶部快捷面板提供 Fetch、Pull、Push 快速触发。
-- **冲突解决**：当发生 Merge / Rebase 冲突时，冲突解决卡片将提供 `采纳本地 (Ours)`、`采纳传入 (Theirs)` 以及 `编辑器合并` 三种一键处理选项。
-
-### 4. 代码微调与编辑
-- 点击文件条目上的 ✏️ **编辑图标** 打开内置全屏代码编辑器。
-- 底部常驻虚拟符号栏，输入括号、分号、制表符极为便捷。
-- 点击右上角 **保存** 按钮，修改内容将毫秒级写回电脑端，且自动触发 Git 状态刷新。
+1. 从 [GitHub Releases](https://github.com/LaT-SKY/MirCode/releases) 下载 `MirCode-v1.0.0.apk` 安装。
+2. 打开 MirCode：
+   - **方式一（推荐·异地直连）**：在首页直接输入终端显示的 **6 位配对码**（如 `839-102`），点击“一键免配置异地连接”，立即穿透连通！
+   - **方式二（扫码直连）**：点击扫码识别电脑终端的二维码，一秒完成全部配对。
+   - **方式三（局域网直连）**：切换到“局域网直连”标签页，输入内网 IP 进行连接。
 
 ---
 
-## 🛠️ 本地构建与开发指南 (Build from Source)
+### 3. (可选) 私有中继服务部署 (`mircode-relay`)
 
-### 编译 Companion 守护服务
+若您希望完全搭建自己的私有中继中转节点，可在 VPS 上执行：
 ```bash
-cd companion
-go test ./...
-go build -o mircode ./cmd/mircode
+cd relay
+go build -o mircode-relay ./cmd/mircode-relay
+./mircode-relay --port 18990
 ```
-
-### 打包 Arch Linux 软件包
-```bash
-cd archlinux
-makepkg -f --nodeps
-# 产出 mircode-1.0.0-1-x86_64.pkg.tar.zst
-```
-
-### 编译 Android 应用
-```bash
-cd android
-./gradlew assembleRelease
-# 产出 android/app/build/outputs/apk/release/app-release.apk
-```
+并在电脑启动时指定中继：`mircode --relay http://your-vps-ip:18990 .`
 
 ---
 

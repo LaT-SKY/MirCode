@@ -5,16 +5,35 @@ import com.google.gson.annotations.SerializedName
 data class ConnectionProfile(
     val id: String = java.util.UUID.randomUUID().toString(),
     val name: String,
-    val host: String,
+    val host: String = "127.0.0.1",
     val port: Int = 18980,
     val token: String,
-    val isTailscale: Boolean = false,
+    val connectMode: String = "relay", // "relay", "tailcat", "direct"
+    val pairCode: String? = null,
+    val relayUrl: String = "https://relay.mircode.dev",
+    val tailcatAddress: String? = null,
     val lastConnected: Long = System.currentTimeMillis()
 ) {
     val baseUrl: String
-        get() = "http://$host:$port"
+        get() = when (connectMode) {
+            "relay" -> {
+                val cleanRelay = relayUrl.trimEnd('/')
+                val cleanCode = pairCode?.replace(" ", "")?.replace("-", "") ?: ""
+                "$cleanRelay/relay/$cleanCode"
+            }
+            else -> "http://$host:$port"
+        }
+
     val wsUrl: String
-        get() = "ws://$host:$port/api/v1/ws?token=$token"
+        get() = when (connectMode) {
+            "relay" -> {
+                val cleanRelay = relayUrl.trimEnd('/')
+                val wsBase = cleanRelay.replace("https://", "wss://").replace("http://", "ws://")
+                val cleanCode = pairCode?.replace(" ", "")?.replace("-", "") ?: ""
+                "$wsBase/relay/$cleanCode/api/v1/ws?token=$token"
+            }
+            else -> "ws://$host:$port/api/v1/ws?token=$token"
+        }
 }
 
 data class SystemInfo(
@@ -44,7 +63,7 @@ data class BrowseResult(
 data class FileStatus(
     @SerializedName("path") val path: String,
     @SerializedName("oldPath") val oldPath: String? = null,
-    @SerializedName("status") val status: String, // "modified", "added", "deleted", "renamed", "untracked", "conflicted"
+    @SerializedName("status") val status: String,
     @SerializedName("staged") val staged: Boolean,
     @SerializedName("additions") val additions: Int = 0,
     @SerializedName("deletions") val deletions: Int = 0,
