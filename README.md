@@ -11,6 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/LaT-SKY/MirCode/releases"><img src="https://img.shields.io/github/v/release/LaT-SKY/MirCode?color=6750A4&label=Release" alt="Release"></a>
+  <a href="https://aur.archlinux.org/packages/mircode-bin"><img src="https://img.shields.io/aur/version/mircode-bin?logo=arch-linux&color=1793D1&label=AUR" alt="AUR"></a>
   <img src="https://img.shields.io/badge/Android-8.0%2B%20(API%2026%2B)-3DDC84?logo=android&logoColor=white" alt="Android">
   <img src="https://img.shields.io/badge/Arch%20Linux-makepkg%20ready-1793D1?logo=arch-linux&logoColor=white" alt="Arch Linux">
   <img src="https://img.shields.io/badge/Material%20Design%203-Jetpack%20Compose-4285F4?logo=google&logoColor=white" alt="MD3">
@@ -98,21 +99,51 @@ mircode tui
 
 ---
 
-## 🚀 电脑端日常启动 (Daemon / CLI)
+## 📦 安装指南 (Installation)
 
-#### 方案 A：通过 Arch Linux 软件包安装
-从 [GitHub Releases](https://github.com/LaT-SKY/MirCode/releases) 下载最新的 Arch Linux 安装包：
+### Arch Linux 用户 (推荐 AUR)
+
+MirCode 已发布至 **Arch User Repository (AUR)**，推荐使用 `yay` 或 `paru` 快速安装：
+
+```bash
+# 使用 yay 安装预编译二进制包
+yay -S mircode-bin
+
+# 或使用 paru 安装
+paru -S mircode-bin
+```
+> 🔗 AUR 软件包主页: [https://aur.archlinux.org/packages/mircode-bin](https://aur.archlinux.org/packages/mircode-bin)
+
+亦可从 [GitHub Releases](https://github.com/LaT-SKY/MirCode/releases) 下载官方构建的 `pkg.tar.zst` 使用 pacman 安装：
 ```bash
 sudo pacman -U mircode-1.0.0-1-x86_64.pkg.tar.zst
-
-# 进入配置中心管理自启
-mircode config
 ```
 
-#### 方案 B：直接运行独立二进制
+### Windows / macOS / 其他 Linux 发行版
+从 [GitHub Releases](https://github.com/LaT-SKY/MirCode/releases) 下载对应平台的二进制压缩包（解压即可运行，无需额外依赖）：
+- Windows: `mircode-v1.0.0-windows-amd64.zip`
+- Linux (x86_64): `mircode-v1.0.0-linux-amd64.tar.gz`
+- Linux (ARM64): `mircode-v1.0.0-linux-arm64.tar.gz`
+- macOS (Apple Silicon): `mircode-v1.0.0-darwin-arm64.tar.gz`
+- macOS (Intel): `mircode-v1.0.0-darwin-amd64.tar.gz`
+
+---
+
+## 🚀 电脑端日常启动 (Daemon / CLI)
+
+#### 方案 A：命令行直接启动伴侣服务
+安装或解压后，在目标项目目录执行：
 ```bash
 # 进入目标项目并启动服务
 mircode .
+```
+
+#### 方案 B：使用终端配置中心管理与自启动
+```bash
+# 打开交互式 TUI 配置面板（配置开机自启、端口、中继）
+mircode config
+# 或者
+mircode tui
 ```
 
 启动后控制台将打印：
