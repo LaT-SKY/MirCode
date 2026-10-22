@@ -24,7 +24,7 @@ import (
 )
 
 var (
-	Version   = "1.0.0"
+	Version   = "1.0.1"
 	BuildTime = "2026-10-22"
 )
 

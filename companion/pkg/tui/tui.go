@@ -290,7 +290,7 @@ func (m Model) View() string {
 		Padding(0, 1)
 
 	footer := footerStyle.Render(
-		"[q] 退出  |  [p] 切换二维码展示  |  [r] 刷新状态  |  MirCode v1.0.0 (MD3 Protocol)",
+		"[q] 退出  |  [p] 切换二维码展示  |  [r] 刷新状态  |  MirCode v1.0.1 (MD3 Protocol)",
 	)
 
 	return lipgloss.JoinVertical(lipgloss.Left, header, mainContent, footer)

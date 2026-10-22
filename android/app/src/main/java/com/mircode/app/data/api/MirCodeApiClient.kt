@@ -16,9 +16,10 @@ class MirCodeApiClient(
 ) {
     private val gson = Gson()
     private val client = OkHttpClient.Builder()
-        .connectTimeout(10, TimeUnit.SECONDS)
+        .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .writeTimeout(30, TimeUnit.SECONDS)
+        .retryOnConnectionFailure(true)
         .build()
 
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
@@ -36,7 +37,12 @@ class MirCodeApiClient(
     }
 
     private suspend fun executeRequest(request: Request): Response = withContext(Dispatchers.IO) {
-        client.newCall(request).execute()
+        try {
+            client.newCall(request).execute()
+        } catch (e: IOException) {
+            // Automatically retry once if previous connection was dropped / closed
+            client.newCall(request).execute()
+        }
     }
 
     suspend fun verifyAuth(): Result<Boolean> = runCatching {

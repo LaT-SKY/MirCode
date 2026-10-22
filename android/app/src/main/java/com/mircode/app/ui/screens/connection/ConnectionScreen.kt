@@ -29,7 +29,7 @@ fun ConnectionScreen(
     // 6-digit Pair code states
     var pairCode by remember { mutableStateOf(initialProfile?.pairCode ?: "") }
     var relayToken by remember { mutableStateOf(initialProfile?.token ?: "") }
-    var relayUrl by remember { mutableStateOf(initialProfile?.relayUrl ?: "https://relay.mircode.dev") }
+    var relayUrl by remember { mutableStateOf(initialProfile?.relayUrl ?: "") }
 
     // Direct LAN states
     var host by remember { mutableStateOf(initialProfile?.host ?: "192.168.1.100") }
@@ -151,6 +151,19 @@ fun ConnectionScreen(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp)
                         )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        OutlinedTextField(
+                            value = relayUrl,
+                            onValueChange = { relayUrl = it },
+                            label = { Text("自定义中继服务器 (选填)") },
+                            placeholder = { Text("默认: https://relay.mircode.dev") },
+                            leadingIcon = { Icon(Icons.Default.CloudQueue, null) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        )
                     }
                 }
 
@@ -158,12 +171,13 @@ fun ConnectionScreen(
 
                 Button(
                     onClick = {
+                        val finalRelay = if (relayUrl.isNotBlank()) relayUrl.trim() else "https://relay.mircode.dev"
                         val profile = ConnectionProfile(
                             name = "云端开发机 (${pairCode})",
                             token = relayToken.trim(),
                             connectMode = "relay",
                             pairCode = pairCode.trim(),
-                            relayUrl = relayUrl.trim()
+                            relayUrl = finalRelay
                         )
                         isConnecting = true
                         onConnect(profile)

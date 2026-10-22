@@ -33,25 +33,34 @@ jobs:
         working-directory: companion
         run: |
           mkdir -p ../dist
+          RAW_TAG="${GITHUB_REF_NAME#v}"
+          VER="${RAW_TAG:-1.0.1}"
           # Linux AMD64
-          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w -X main.Version=1.0.0" -o ../dist/mircode-linux-amd64 ./cmd/mircode
-          tar -czvf ../dist/mircode-v1.0.0-linux-amd64.tar.gz -C ../dist mircode-linux-amd64
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w -X main.Version=${VER}" -o ../dist/mircode-linux-amd64 ./cmd/mircode
+          tar -czvf "../dist/mircode-v${VER}-linux-amd64.tar.gz" -C ../dist mircode-linux-amd64
           # Linux ARM64
-          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags="-s -w -X main.Version=1.0.0" -o ../dist/mircode-linux-arm64 ./cmd/mircode
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags="-s -w -X main.Version=${VER}" -o ../dist/mircode-linux-arm64 ./cmd/mircode
+          tar -czvf "../dist/mircode-v${VER}-linux-arm64.tar.gz" -C ../dist mircode-linux-arm64
           # Windows AMD64
-          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags="-s -w -X main.Version=1.0.0" -o ../dist/mircode-windows-amd64.exe ./cmd/mircode
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags="-s -w -X main.Version=${VER}" -o ../dist/mircode-windows-amd64.exe ./cmd/mircode
+          zip -j "../dist/mircode-v${VER}-windows-amd64.zip" ../dist/mircode-windows-amd64.exe
           # macOS ARM64
-          CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -trimpath -ldflags="-s -w -X main.Version=1.0.0" -o ../dist/mircode-darwin-arm64 ./cmd/mircode
+          CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -trimpath -ldflags="-s -w -X main.Version=${VER}" -o ../dist/mircode-darwin-arm64 ./cmd/mircode
+          tar -czvf "../dist/mircode-v${VER}-darwin-arm64.tar.gz" -C ../dist mircode-darwin-arm64
+
+          # Relay Server (Linux AMD64)
+          cd ../relay
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o ../dist/mircode-relay ./cmd/mircode-relay
+          tar -czvf "../dist/mircode-relay-v${VER}-linux-amd64.tar.gz" -C ../dist mircode-relay
 
       - name: Upload Companion Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: companion-binaries
           path: |
-            dist/mircode-v1.0.0-linux-amd64.tar.gz
-            dist/mircode-windows-amd64.exe
-            dist/mircode-darwin-arm64
-            dist/mircode-linux-arm64
+            dist/*.tar.gz
+            dist/*.zip
+            dist/mircode-*
 
   build-arch:
     name: Build Arch Linux Package
@@ -104,13 +113,15 @@ jobs:
 
       - name: Rename & Upload APK
         run: |
-          cp android/app/build/outputs/apk/release/app-release.apk MirCode-v1.0.0.apk
+          RAW_TAG="${GITHUB_REF_NAME#v}"
+          VER="${RAW_TAG:-1.0.1}"
+          cp android/app/build/outputs/apk/release/app-release.apk "MirCode-v${VER}.apk"
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: mircode-apk
-          path: MirCode-v1.0.0.apk
+          path: MirCode-*.apk
 
   release:
     name: Publish GitHub Release
@@ -129,7 +140,7 @@ jobs:
       - name: Organize Release Files
         run: |
           mkdir -p release-files
-          find all-artifacts -type f \( -name "*.apk" -o -name "*.pkg.tar.zst" -o -name "*.tar.gz" -o -name "*.exe" \) -exec cp {} release-files/ \;
+          find all-artifacts -type f \( -name "*.apk" -o -name "*.pkg.tar.zst" -o -name "*.tar.gz" -o -name "*.zip" -o -name "*.exe" \) -exec cp {} release-files/ \;
           ls -lh release-files/
 
       - name: Create or Update Release

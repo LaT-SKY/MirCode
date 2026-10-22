@@ -116,16 +116,16 @@ paru -S mircode-bin
 
 亦可从 [GitHub Releases](https://github.com/LaT-SKY/MirCode/releases) 下载官方构建的 `pkg.tar.zst` 使用 pacman 安装：
 ```bash
-sudo pacman -U mircode-1.0.0-1-x86_64.pkg.tar.zst
+sudo pacman -U mircode-1.0.1-1-x86_64.pkg.tar.zst
 ```
 
 ### Windows / macOS / 其他 Linux 发行版
 从 [GitHub Releases](https://github.com/LaT-SKY/MirCode/releases) 下载对应平台的二进制压缩包（解压即可运行，无需额外依赖）：
-- Windows: `mircode-v1.0.0-windows-amd64.zip`
-- Linux (x86_64): `mircode-v1.0.0-linux-amd64.tar.gz`
-- Linux (ARM64): `mircode-v1.0.0-linux-arm64.tar.gz`
-- macOS (Apple Silicon): `mircode-v1.0.0-darwin-arm64.tar.gz`
-- macOS (Intel): `mircode-v1.0.0-darwin-amd64.tar.gz`
+- Windows: `mircode-v1.0.1-windows-amd64.zip`
+- Linux (x86_64): `mircode-v1.0.1-linux-amd64.tar.gz`
+- Linux (ARM64): `mircode-v1.0.1-linux-arm64.tar.gz`
+- macOS (Apple Silicon): `mircode-v1.0.1-darwin-arm64.tar.gz`
+- macOS (Intel): `mircode-v1.0.1-darwin-amd64.tar.gz`
 
 ---
 
@@ -172,7 +172,7 @@ mircode tui
 
 ## 📱 移动端连接指南 (Android)
 
-1. 从 [GitHub Releases](https://github.com/LaT-SKY/MirCode/releases) 下载 `MirCode-v1.0.0.apk` 安装。
+1. 从 [GitHub Releases](https://github.com/LaT-SKY/MirCode/releases) 下载 `MirCode-v1.0.1.apk` 安装。
 2. 打开 MirCode：
    - **方式一（推荐·异地直连）**：在首页直接输入终端显示的 **6 位配对码**（如 `839-102`），点击“一键免配置异地连接”，立即穿透连通！
    - **方式二（扫码直连）**：点击扫码识别电脑终端的二维码，一秒完成全部配对。
