@@ -20,7 +20,7 @@ func TestBrowseAndFileReadWrite(t *testing.T) {
 	_ = os.WriteFile(testFile, []byte("Hello MirCode!"), 0644)
 
 	// Browse test
-	res, err := Browse(tempDir)
+	res, err := Browse(tempDir, "")
 	if err != nil {
 		t.Fatalf("Browse failed: %v", err)
 	}

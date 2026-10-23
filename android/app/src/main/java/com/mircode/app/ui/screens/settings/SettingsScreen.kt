@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mircode.app.data.model.AppSettings
@@ -267,18 +268,30 @@ fun SettingsScreen(
 
                         HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text("编辑器字号 (${settings.editorFontSize} sp)", style = MaterialTheme.typography.bodyMedium)
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Text(
+                                text = "编辑器字号 (${settings.editorFontSize} sp)",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
                                 listOf(12, 13, 14, 16).forEach { size ->
                                     FilterChip(
                                         selected = settings.editorFontSize == size,
                                         onClick = { updateSettings(settings.copy(editorFontSize = size)) },
-                                        label = { Text("$size") }
+                                        label = {
+                                            Text(
+                                                text = "$size sp",
+                                                modifier = Modifier.fillMaxWidth(),
+                                                textAlign = TextAlign.Center,
+                                                fontSize = 12.sp
+                                            )
+                                        },
+                                        modifier = Modifier.weight(1f)
                                     )
                                 }
                             }
@@ -299,18 +312,30 @@ fun SettingsScreen(
 
                 Card(shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text("差异上下文保留行数", style = MaterialTheme.typography.bodyMedium)
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Text(
+                                text = "差异上下文保留行数",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
                                 listOf(3, 5, 8).forEach { lines ->
                                     FilterChip(
                                         selected = settings.diffContextLines == lines,
                                         onClick = { updateSettings(settings.copy(diffContextLines = lines)) },
-                                        label = { Text("$lines 行") }
+                                        label = {
+                                            Text(
+                                                text = "$lines 行",
+                                                modifier = Modifier.fillMaxWidth(),
+                                                textAlign = TextAlign.Center,
+                                                fontSize = 12.sp
+                                            )
+                                        },
+                                        modifier = Modifier.weight(1f)
                                     )
                                 }
                             }
@@ -318,18 +343,30 @@ fun SettingsScreen(
 
                         HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text("未修改代码折叠阈值", style = MaterialTheme.typography.bodyMedium)
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Text(
+                                text = "未修改代码折叠阈值",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
                                 listOf(5, 8, 12).forEach { threshold ->
                                     FilterChip(
                                         selected = settings.diffFoldingThreshold == threshold,
                                         onClick = { updateSettings(settings.copy(diffFoldingThreshold = threshold)) },
-                                        label = { Text("> $threshold 行") }
+                                        label = {
+                                            Text(
+                                                text = "> $threshold 行",
+                                                modifier = Modifier.fillMaxWidth(),
+                                                textAlign = TextAlign.Center,
+                                                fontSize = 12.sp
+                                            )
+                                        },
+                                        modifier = Modifier.weight(1f)
                                     )
                                 }
                             }

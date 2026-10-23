@@ -108,11 +108,12 @@ fun BranchesScreen(
                                         loadData()
                                     }
                                 },
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Icon(Icons.Default.CloudSync, null, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("Fetch")
+                                Text("Fetch", maxLines = 1, softWrap = false, fontSize = 13.sp)
                             }
 
                             FilledTonalButton(
@@ -125,11 +126,12 @@ fun BranchesScreen(
                                         onRefresh()
                                     }
                                 },
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Icon(Icons.Default.CloudDownload, null, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("Pull")
+                                Text("Pull", maxLines = 1, softWrap = false, fontSize = 13.sp)
                             }
 
                             Button(
@@ -142,11 +144,12 @@ fun BranchesScreen(
                                         onRefresh()
                                     }
                                 },
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Icon(Icons.Default.CloudUpload, null, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("Push")
+                                Text("Push", maxLines = 1, softWrap = false, fontSize = 13.sp)
                             }
                         }
                     }
@@ -253,7 +256,7 @@ fun BranchesScreen(
                     headlineContent = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = branch.name,
+                                text = branch.safeName,
                                 fontWeight = if (branch.isCurrent) FontWeight.Bold else FontWeight.Normal,
                                 color = if (branch.isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                             )
@@ -278,12 +281,19 @@ fun BranchesScreen(
                         }
                     },
                     supportingContent = {
-                        Text(
-                            text = "${branch.commitSha.take(7)} - ${branch.message}",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontFamily = FontFamily.Monospace,
-                            maxLines = 1
-                        )
+                        val sha = branch.safeCommitSha.take(7)
+                        val msg = branch.safeMessage
+                        val display = if (sha.isNotEmpty() && msg.isNotEmpty()) {
+                            "$sha - $msg"
+                        } else sha.ifEmpty { msg }
+                        if (display.isNotEmpty()) {
+                            Text(
+                                text = display,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontFamily = FontFamily.Monospace,
+                                maxLines = 1
+                            )
+                        }
                     },
                     leadingContent = {
                         Icon(
@@ -297,9 +307,9 @@ fun BranchesScreen(
                             OutlinedButton(
                                 onClick = {
                                     scope.launch {
-                                        apiClient.branchAction("checkout", branch.name)
+                                        apiClient.branchAction("checkout", branch.safeName)
                                             .onSuccess {
-                                                feedbackMessage = "已切换到分支 ${branch.name}"
+                                                feedbackMessage = "已切换到分支 ${branch.safeName}"
                                                 loadData()
                                                 onRefresh()
                                             }
@@ -340,15 +350,15 @@ fun BranchesScreen(
 
             items(stashes) { stash ->
                 ListItem(
-                    headlineContent = { Text(stash.name, fontWeight = FontWeight.SemiBold) },
-                    supportingContent = { Text(stash.message) },
+                    headlineContent = { Text(stash.safeName, fontWeight = FontWeight.SemiBold) },
+                    supportingContent = { Text(stash.safeMessage) },
                     trailingContent = {
                         Button(
                             onClick = {
                                 scope.launch {
                                     apiClient.stashAction("pop", index = stash.index)
                                         .onSuccess {
-                                            feedbackMessage = "已恢复 Stash: ${stash.name}"
+                                            feedbackMessage = "已恢复 Stash: ${stash.safeName}"
                                             loadData()
                                             onRefresh()
                                         }

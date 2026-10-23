@@ -150,6 +150,7 @@ func (s *Server) setActiveWorkspace(ws string) error {
 
 	// Broadcast workspace switch
 	s.hub.Broadcast("WORKSPACE_SWITCHED", map[string]string{"workspace": ws})
+	s.hub.Broadcast("GIT_STATUS_UPDATED", nil)
 	return nil
 }
 
@@ -178,7 +179,8 @@ func (s *Server) handleSystemInfo(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleFsBrowse(w http.ResponseWriter, r *http.Request) {
 	target := r.URL.Query().Get("path")
-	res, err := fs.Browse(target)
+	ws := s.getActiveWorkspace()
+	res, err := fs.Browse(target, ws)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return

@@ -465,7 +465,7 @@ func ListBranches(workspace string) ([]BranchInfo, error) {
 		return nil, err
 	}
 
-	var branches []BranchInfo
+	branches := make([]BranchInfo, 0)
 	scanner := bufio.NewScanner(strings.NewReader(out))
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -478,6 +478,14 @@ func ListBranches(workspace string) ([]BranchInfo, error) {
 		parts := strings.Fields(trimmed)
 		if len(parts) >= 2 {
 			name := parts[0]
+			// Skip symbolic refs like remotes/origin/HEAD -> origin/main
+			if len(parts) >= 3 && parts[1] == "->" {
+				continue
+			}
+			if strings.HasPrefix(name, "(") {
+				continue
+			}
+
 			sha := parts[1]
 			msg := ""
 			if len(parts) > 2 {
@@ -538,7 +546,7 @@ func StashList(workspace string) ([]StashItem, error) {
 		return nil, err
 	}
 
-	var items []StashItem
+	items := make([]StashItem, 0)
 	scanner := bufio.NewScanner(strings.NewReader(out))
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -559,6 +567,7 @@ func StashList(workspace string) ([]StashItem, error) {
 			})
 		}
 	}
+
 	return items, nil
 }
 

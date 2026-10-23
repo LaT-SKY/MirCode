@@ -93,19 +93,27 @@ data class StatusResult(
 }
 
 data class BranchInfo(
-    @SerializedName("name") val name: String,
-    @SerializedName("isCurrent") val isCurrent: Boolean,
-    @SerializedName("isRemote") val isRemote: Boolean,
-    @SerializedName("commitSha") val commitSha: String,
-    @SerializedName("message") val message: String
-)
+    @SerializedName("name") val name: String = "",
+    @SerializedName("isCurrent") val isCurrent: Boolean = false,
+    @SerializedName("isRemote") val isRemote: Boolean = false,
+    @SerializedName("commitSha") val commitSha: String? = "",
+    @SerializedName("message") val message: String? = ""
+) {
+    val safeCommitSha: String get() = commitSha ?: ""
+    val safeMessage: String get() = message ?: ""
+    val safeName: String get() = name ?: ""
+}
 
 data class StashItem(
-    @SerializedName("index") val index: Int,
-    @SerializedName("name") val name: String,
-    @SerializedName("branch") val branch: String,
-    @SerializedName("message") val message: String
-)
+    @SerializedName("index") val index: Int = 0,
+    @SerializedName("name") val name: String = "",
+    @SerializedName("branch") val branch: String = "",
+    @SerializedName("message") val message: String = ""
+) {
+    val safeName: String get() = name ?: ""
+    val safeMessage: String get() = message ?: ""
+    val safeBranch: String get() = branch ?: ""
+}
 
 data class ReviewItem(
     @SerializedName("filePath") val filePath: String,

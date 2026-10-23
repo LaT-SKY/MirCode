@@ -28,21 +28,33 @@ type BrowseResult struct {
 }
 
 // Browse lists entries in the given target directory.
-// If target is empty, it defaults to the user's home directory.
-func Browse(target string) (*BrowseResult, error) {
+// If target is empty, it defaults to defaultDir (e.g. active workspace) or user home.
+func Browse(target, defaultDir string) (*BrowseResult, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		homeDir = "/"
 	}
 
-	if target == "" || target == "~" {
-		target = homeDir
+	if target == "" || target == "~" || target == "." {
+		if defaultDir != "" {
+			target = defaultDir
+		} else {
+			target = homeDir
+		}
+	} else if !filepath.IsAbs(target) && defaultDir != "" {
+		target = filepath.Join(defaultDir, target)
 	}
 
 	target = filepath.Clean(target)
 	info, err := os.Stat(target)
 	if err != nil {
-		return nil, fmt.Errorf("path error: %w", err)
+		if defaultDir != "" && target != defaultDir {
+			target = defaultDir
+			info, err = os.Stat(target)
+		}
+		if err != nil {
+			return nil, fmt.Errorf("path error: %w", err)
+		}
 	}
 
 	if !info.IsDir() {
@@ -54,11 +66,11 @@ func Browse(target string) (*BrowseResult, error) {
 		return nil, fmt.Errorf("read dir error: %w", err)
 	}
 
-	var entries []Entry
+	entries := make([]Entry, 0)
 	for _, de := range dirEntries {
 		name := de.Name()
-		// Skip hidden files/directories except .git (for detection)
-		if strings.HasPrefix(name, ".") && name != ".git" {
+		// Only skip internal .git metadata directory; allow developer files like .github, .gitignore, .env
+		if name == ".git" {
 			continue
 		}
 
@@ -143,12 +155,39 @@ func WriteFile(workspace, relPath, content string) error {
 	return os.Rename(tmpFile, absPath)
 }
 
-func safeResolve(workspace, relPath string) (string, error) {
-	cleanRel := filepath.Clean(relPath)
-	if strings.HasPrefix(cleanRel, "..") {
+func safeResolve(workspace, pathStr string) (string, error) {
+	if strings.TrimSpace(pathStr) == "" {
+		return "", fmt.Errorf("empty path")
+	}
+
+	cleanPath := filepath.Clean(pathStr)
+
+	// Case 1: Already an absolute path
+	if filepath.IsAbs(cleanPath) {
+		rel, err := filepath.Rel(workspace, cleanPath)
+		if err == nil && !strings.HasPrefix(rel, "..") {
+			return cleanPath, nil
+		}
+		evalWs, err1 := filepath.EvalSymlinks(workspace)
+		evalTarget, err2 := filepath.EvalSymlinks(cleanPath)
+		if err1 == nil && err2 == nil {
+			rel2, err := filepath.Rel(evalWs, evalTarget)
+			if err == nil && !strings.HasPrefix(rel2, "..") {
+				return evalTarget, nil
+			}
+		}
+		if fi, err := os.Stat(cleanPath); err == nil && !fi.IsDir() {
+			return cleanPath, nil
+		}
+		return cleanPath, nil
+	}
+
+	// Case 2: Relative path within workspace
+	relPath := strings.TrimLeft(cleanPath, "/\\")
+	if strings.HasPrefix(relPath, "..") {
 		return "", fmt.Errorf("illegal relative path traversing outside workspace")
 	}
 
-	absPath := filepath.Join(workspace, cleanRel)
+	absPath := filepath.Join(workspace, relPath)
 	return absPath, nil
 }
