@@ -21,14 +21,26 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("mircode.keystore")
+            storePassword = "mircode123"
+            keyAlias = "mircode"
+            keyPassword = "mircode123"
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("release")
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {

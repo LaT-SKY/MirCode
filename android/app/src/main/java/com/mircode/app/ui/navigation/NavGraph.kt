@@ -39,46 +39,40 @@ fun MirCodeNavGraph(
 
     var activeProfile by remember { mutableStateOf<ConnectionProfile?>(null) }
     var apiClient by remember { mutableStateOf<MirCodeApiClient?>(null) }
-    var checkingPreflight by remember { mutableStateOf(targetProfile != null) }
 
-    LaunchedEffect(targetProfile) {
-        if (targetProfile != null) {
-            val client = MirCodeApiClient(targetProfile)
-            client.verifyAuth()
-                .onSuccess {
-                    activeProfile = targetProfile
-                    apiClient = client
-                    wsClient.connect(targetProfile)
-                    checkingPreflight = false
-                    navController.navigate("dashboard") {
-                        popUpTo("splash") { inclusive = true }
-                    }
-                }
-                .onFailure {
-                    checkingPreflight = false
-                    navController.navigate("connection") {
-                        popUpTo("splash") { inclusive = true }
-                    }
-                }
-        } else {
-            checkingPreflight = false
-        }
-    }
-
-    if (checkingPreflight) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
-        return
-    }
+    val startDest = if (targetProfile != null) "splash" else "connection"
 
     NavHost(
         navController = navController,
-        startDestination = if (activeProfile != null) "dashboard" else "connection"
+        startDestination = startDest
     ) {
         composable("splash") {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
+            }
+
+            LaunchedEffect(Unit) {
+                if (targetProfile != null) {
+                    val client = MirCodeApiClient(targetProfile)
+                    client.verifyAuth()
+                        .onSuccess {
+                            activeProfile = targetProfile
+                            apiClient = client
+                            wsClient.connect(targetProfile)
+                            navController.navigate("dashboard") {
+                                popUpTo("splash") { inclusive = true }
+                            }
+                        }
+                        .onFailure {
+                            navController.navigate("connection") {
+                                popUpTo("splash") { inclusive = true }
+                            }
+                        }
+                } else {
+                    navController.navigate("connection") {
+                        popUpTo("splash") { inclusive = true }
+                    }
+                }
             }
         }
 
