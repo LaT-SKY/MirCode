@@ -69,7 +69,8 @@ class MirCodeApiClient(
         val response = executeRequest(request)
         response.use {
             if (!it.isSuccessful) throw IOException("Failed to browse: ${it.code}")
-            gson.fromJson(it.body?.string(), BrowseResult::class.java)
+            val raw = gson.fromJson(it.body?.string(), BrowseResult::class.java)
+            raw.copy(entries = raw.entries ?: emptyList())
         }
     }
 
@@ -120,7 +121,13 @@ class MirCodeApiClient(
         val response = executeRequest(request)
         response.use {
             if (!it.isSuccessful) throw IOException("Failed to get git status: ${it.code}")
-            gson.fromJson(it.body?.string(), StatusResult::class.java)
+            val raw = gson.fromJson(it.body?.string(), StatusResult::class.java)
+            raw.copy(
+                stagedFiles = raw.safeStagedFiles,
+                unstagedFiles = raw.safeUnstagedFiles,
+                untrackedFiles = raw.safeUntrackedFiles,
+                conflictedFiles = raw.safeConflictedFiles
+            )
         }
     }
 

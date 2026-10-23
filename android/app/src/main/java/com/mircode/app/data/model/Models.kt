@@ -54,9 +54,9 @@ data class BrowseEntry(
 )
 
 data class BrowseResult(
-    @SerializedName("currentPath") val currentPath: String,
-    @SerializedName("parentPath") val parentPath: String,
-    @SerializedName("homePath") val homePath: String,
+    @SerializedName("currentPath") val currentPath: String = "",
+    @SerializedName("parentPath") val parentPath: String = "",
+    @SerializedName("homePath") val homePath: String = "",
     @SerializedName("entries") val entries: List<BrowseEntry> = emptyList()
 )
 
@@ -85,7 +85,12 @@ data class StatusResult(
     @SerializedName("conflictedFiles") val conflictedFiles: List<FileStatus> = emptyList(),
     @SerializedName("totalReviewed") val totalReviewed: Int = 0,
     @SerializedName("totalChanged") val totalChanged: Int = 0
-)
+) {
+    val safeConflictedFiles: List<FileStatus> get() = conflictedFiles ?: emptyList()
+    val safeStagedFiles: List<FileStatus> get() = stagedFiles ?: emptyList()
+    val safeUnstagedFiles: List<FileStatus> get() = unstagedFiles ?: emptyList()
+    val safeUntrackedFiles: List<FileStatus> get() = untrackedFiles ?: emptyList()
+}
 
 data class BranchInfo(
     @SerializedName("name") val name: String,

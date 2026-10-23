@@ -1,5 +1,6 @@
 package com.mircode.app.ui.screens.connection
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -50,6 +51,7 @@ fun ConnectionScreen(
 
     var isConnecting by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var showScanner by remember { mutableStateOf(false) }
 
     fun tryConnect(profile: ConnectionProfile) {
         scope.launch {
@@ -73,6 +75,15 @@ fun ConnectionScreen(
         topBar = {
             TopAppBar(
                 title = { Text("连接电脑工作区", fontWeight = FontWeight.Bold) },
+                actions = {
+                    IconButton(onClick = { showScanner = true }) {
+                        Icon(
+                            imageVector = Icons.Default.QrCodeScanner,
+                            contentDescription = "扫码连接",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
@@ -109,6 +120,55 @@ fun ConnectionScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Prominent QR Code Scan Card
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = !isConnecting) { showScanner = true }
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.QrCodeScanner,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(14.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "扫描电脑端二维码一键连接",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Text(
+                            text = "扫描终端输出的二维码即可自动配置并登录",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                        )
+                    }
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
 
             // Error Message Banner
             if (errorMessage != null) {
@@ -437,5 +497,28 @@ fun ConnectionScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+
+    if (showScanner) {
+        QrScannerDialog(
+            onDismiss = { showScanner = false },
+            onScanned = { profile ->
+                showScanner = false
+                if (profile.connectMode == "relay") {
+                    selectedTab = 0
+                    pairCode = profile.pairCode ?: ""
+                    relayToken = profile.token
+                    relayUrl = profile.relayUrl ?: "https://relay.mircode.dev"
+                    relayProfileName = profile.name
+                } else {
+                    selectedTab = 1
+                    host = profile.host
+                    port = profile.port.toString()
+                    directToken = profile.token
+                    profileName = profile.name
+                }
+                tryConnect(profile)
+            }
+        )
     }
 }

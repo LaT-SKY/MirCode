@@ -154,10 +154,10 @@ fun BranchesScreen(
             }
 
             // 2. Conflict Resolver Section
-            if (status.conflictedFiles.isNotEmpty()) {
+            if (status.safeConflictedFiles.isNotEmpty()) {
                 item {
                     Text(
-                        text = "冲突解决 (${status.conflictedFiles.size})",
+                        text = "冲突解决 (${status.safeConflictedFiles.size})",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.error,
@@ -165,7 +165,7 @@ fun BranchesScreen(
                     )
                 }
 
-                items(status.conflictedFiles) { file ->
+                items(status.safeConflictedFiles) { file ->
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
